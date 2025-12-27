@@ -10,11 +10,13 @@ Exported this as .zip containing all sensor data
 
 Created .csv and .mat files combining all sensors, and processing data
 
-    Utilized a nearest-neighbor asynchronous merge between GPS (1Hz) and inertial sensors (100Hz)
+    Utilized a nearest-neighbor sasynchronous merge between GPS (1Hz) and inertial sensors (100Hz)
 
     Performed calculation to move from raw coordinate GPS data to NED convention
 
     Decomposed the GPS scalar speed into 2 vectors for NED correlation (v_north and v_east)
+
+Implemented Extended Kalman Filter to account for non-linearity of system
 
 
 

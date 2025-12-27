@@ -9,19 +9,22 @@ mag = pd.read_csv('Ride_2/Magnetometer.csv')
 gps = pd.read_csv('Ride_2/Location.csv')
 
 # 2. Select and Rename (Mapping Z,Y,X to X,Y,Z for ISO 8855)
-acc = accel[['seconds_elapsed', 'x', 'y', 'z']].rename(columns={'x':'ax', 'y':'ay', 'z':'az'}).sort_values('seconds_elapsed')
-gyr = gyro[['seconds_elapsed', 'x', 'y', 'z']].rename(columns={'x':'gx', 'y':'gy', 'z':'gz'}).sort_values('seconds_elapsed')
-mag_data = mag[['seconds_elapsed', 'x', 'y', 'z']].rename(columns={'x':'mx', 'y':'my', 'z':'mz'}).sort_values('seconds_elapsed')
-gps_data = gps[['seconds_elapsed', 'latitude', 'longitude', 'speed', 'bearing', 'horizontalAccuracy']].sort_values('seconds_elapsed')
+acc = accel[['time', 'seconds_elapsed', 'x', 'y', 'z']].rename(columns={'x':'ax', 'y':'ay', 'z':'az'}).sort_values('time')
+gyr = gyro[['time', 'x', 'y', 'z']].rename(columns={'x':'gx', 'y':'gy', 'z':'gz'}).sort_values('time')
+mag_data = mag[['time', 'x', 'y', 'z']].rename(columns={'x':'mx', 'y':'my', 'z':'mz'}).sort_values('time')
+gps_data = gps[['time', 'latitude', 'longitude', 'speed', 'bearing', 'horizontalAccuracy']].sort_values('time')
 
 # 3. Step-by-Step Merge (The "Inertial Backbone")
 # Merge Gyro to Accel
-imu = pd.merge_asof(acc, gyr, on='seconds_elapsed', direction='nearest')
+imu = pd.merge_asof(acc, gyr, on='time', direction='nearest')
 # Merge Magnetometer to the IMU stream
-imu = pd.merge_asof(imu, mag_data, on='seconds_elapsed', direction='nearest')
+imu = pd.merge_asof(imu, mag_data, on='time', direction='nearest')
 
 # 4. Asynchronous GPS Merge (1Hz into 100Hz)
-df = pd.merge_asof(imu, gps_data, on='seconds_elapsed', direction='nearest', tolerance=0.05)
+df = pd.merge_asof(imu, gps_data, on='time', direction='nearest', tolerance=50000000)
+
+# Recalculate seconds_elapsed from time to ensure consistency with the merge key
+df['seconds_elapsed'] = (df['time'] - df['time'].iloc[0]) / 1e9
 
 # Decompose GPS Speed into North/East Velocity Vectors
 df['v_north'] = df['speed'] * np.cos(np.deg2rad(df['bearing']))
@@ -35,8 +38,8 @@ df['north_meters'] = np.deg2rad(df['latitude'] - lat0) * R_earth
 df['east_meters'] = np.deg2rad(df['longitude'] - lon0) * R_earth * np.cos(np.deg2rad(lat0))
 
 # 5. Clear non-GPS rows (Keep it "Truthful")
-gps_timestamps = gps_data['seconds_elapsed'].values
-mask = df['seconds_elapsed'].apply(lambda x: any(np.isclose(x, gps_timestamps, atol=0.005)))
+gps_timestamps = gps_data['time'].values
+mask = df['time'].apply(lambda x: any(np.abs(x - gps_timestamps) <= 5000000))
 df.loc[~mask, ['latitude', 'longitude', 'speed', 'bearing', 'v_north', 'v_east', 'horizontalAccuracy', 'north_meters', 'east_meters']] = 0
 
 # 6. Final Export

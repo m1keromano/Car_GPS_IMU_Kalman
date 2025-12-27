@@ -1,0 +1,2 @@
+version,device name,recording epoch time,recording time,recording timezone,platform,appVersion,device id,sensors,sampleRateMs,standardisation
+3,iPhone 13 Pro Max,1766864060154,2025-12-27_19-34-20,America/New_York,ios,1.50,867943ca-b4a8-46e1-8730-b4d9f1f1c4d9,Accelerometer|Gyroscope|Magnetometer|Location|Annotation|MagnetometerUncalibrated|GyroscopeUncalibrated|AccelerometerUncalibrated,10|10|10|1000||10|10|10,false

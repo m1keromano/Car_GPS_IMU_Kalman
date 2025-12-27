@@ -14,6 +14,8 @@ Created .csv and .mat files combining all sensors, and processing data
 
     Performed calculation to move from raw coordinate GPS data to NED convention
 
+    Decomposed the GPS scalar speed into 2 vectors for NED correlation (v_north and v_east)
+
 
 
 

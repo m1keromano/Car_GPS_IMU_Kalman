@@ -23,6 +23,10 @@ imu = pd.merge_asof(imu, mag_data, on='seconds_elapsed', direction='nearest')
 # 4. Asynchronous GPS Merge (1Hz into 100Hz)
 df = pd.merge_asof(imu, gps_data, on='seconds_elapsed', direction='nearest', tolerance=0.05)
 
+# Decompose GPS Speed into North/East Velocity Vectors
+df['v_north'] = df['speed'] * np.cos(np.deg2rad(df['bearing']))
+df['v_east'] = df['speed'] * np.sin(np.deg2rad(df['bearing']))
+
 # Convert Lat/Lon to North/East meters (WGS-84 approximation)
 R_earth = 6378137.0
 lat0 = gps_data['latitude'].iloc[0]
@@ -33,12 +37,12 @@ df['east_meters'] = np.deg2rad(df['longitude'] - lon0) * R_earth * np.cos(np.deg
 # 5. Clear non-GPS rows (Keep it "Truthful")
 gps_timestamps = gps_data['seconds_elapsed'].values
 mask = df['seconds_elapsed'].apply(lambda x: any(np.isclose(x, gps_timestamps, atol=0.005)))
-df.loc[~mask, ['latitude', 'longitude', 'speed', 'bearing', 'horizontalAccuracy', 'north_meters', 'east_meters']] = 0
+df.loc[~mask, ['latitude', 'longitude', 'speed', 'bearing', 'v_north', 'v_east', 'horizontalAccuracy', 'north_meters', 'east_meters']] = 0
 
 # 6. Final Export
-# Columns: 1:Time, 2-4:Acc, 5-7:Gyro, 8-10:Mag, 11:Lat, 12:Lon, 13:Speed, 14:Bearing, 15:North, 16:East
+# Columns: 1:Time, 2-4:Acc, 5-7:Gyro, 8-10:Mag, 11:Lat, 12:Lon, 13:Speed, 14:Bearing, 15:V_North, 16:V_East, 17:HorizAcc, 18:North, 19:East
 export_cols = ['seconds_elapsed', 'ax', 'ay', 'az', 'gx', 'gy', 'gz', 
-               'mx', 'my', 'mz', 'latitude', 'longitude', 'speed', 'bearing', 'horizontalAccuracy', 'north_meters', 'east_meters']
+               'mx', 'my', 'mz', 'latitude', 'longitude', 'speed', 'bearing', 'v_north', 'v_east', 'horizontalAccuracy', 'north_meters', 'east_meters']
 sim_input = df[export_cols].values.T
 
 savemat('combined_sensor_data.mat', {'ekf_data': sim_input})

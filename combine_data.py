@@ -12,7 +12,7 @@ gps = pd.read_csv('Ride_2/Location.csv')
 acc = accel[['seconds_elapsed', 'x', 'y', 'z']].rename(columns={'x':'ax', 'y':'ay', 'z':'az'}).sort_values('seconds_elapsed')
 gyr = gyro[['seconds_elapsed', 'x', 'y', 'z']].rename(columns={'x':'gx', 'y':'gy', 'z':'gz'}).sort_values('seconds_elapsed')
 mag_data = mag[['seconds_elapsed', 'x', 'y', 'z']].rename(columns={'x':'mx', 'y':'my', 'z':'mz'}).sort_values('seconds_elapsed')
-gps_data = gps[['seconds_elapsed', 'latitude', 'longitude', 'speed', 'bearing']].sort_values('seconds_elapsed')
+gps_data = gps[['seconds_elapsed', 'latitude', 'longitude', 'speed', 'bearing', 'horizontalAccuracy']].sort_values('seconds_elapsed')
 
 # 3. Step-by-Step Merge (The "Inertial Backbone")
 # Merge Gyro to Accel
@@ -33,12 +33,12 @@ df['east_meters'] = np.deg2rad(df['longitude'] - lon0) * R_earth * np.cos(np.deg
 # 5. Clear non-GPS rows (Keep it "Truthful")
 gps_timestamps = gps_data['seconds_elapsed'].values
 mask = df['seconds_elapsed'].apply(lambda x: any(np.isclose(x, gps_timestamps, atol=0.005)))
-df.loc[~mask, ['latitude', 'longitude', 'speed', 'bearing', 'north_meters', 'east_meters']] = 0
+df.loc[~mask, ['latitude', 'longitude', 'speed', 'bearing', 'horizontalAccuracy', 'north_meters', 'east_meters']] = 0
 
 # 6. Final Export
 # Columns: 1:Time, 2-4:Acc, 5-7:Gyro, 8-10:Mag, 11:Lat, 12:Lon, 13:Speed, 14:Bearing, 15:North, 16:East
 export_cols = ['seconds_elapsed', 'ax', 'ay', 'az', 'gx', 'gy', 'gz', 
-               'mx', 'my', 'mz', 'latitude', 'longitude', 'speed', 'bearing', 'north_meters', 'east_meters']
+               'mx', 'my', 'mz', 'latitude', 'longitude', 'speed', 'bearing', 'horizontalAccuracy', 'north_meters', 'east_meters']
 sim_input = df[export_cols].values.T
 
 savemat('combined_sensor_data.mat', {'ekf_data': sim_input})
